@@ -288,6 +288,23 @@ fn rewrite_sessionless_for_page(text: &str, target: &str) -> Option<String> {
     Some(value.to_string())
 }
 
+fn strip_implicit_session_for_page(text: String, target: &str) -> String {
+    let Ok(mut value) = serde_json::from_str::<serde_json::Value>(&text) else {
+        return text;
+    };
+    let Some(object) = value.as_object_mut() else {
+        return text;
+    };
+    let implicit_session = implicit_session_id(target);
+    if object.get("sessionId").and_then(serde_json::Value::as_str)
+        != Some(implicit_session.as_str())
+    {
+        return text;
+    }
+    object.remove("sessionId");
+    serde_json::to_string(&value).unwrap_or(text)
+}
+
 enum ServerMessage {
     Cdp(CdpMessage),
     NewConnection {
@@ -2508,11 +2525,16 @@ async fn handle_connection_ws(
         tracing::debug!("Connection init: {}", &init_msg[..init_msg.len().min(100)]);
     }
 
+    let reply_page_target = page_target.clone();
     let send_task = tokio::task::spawn_local(async move {
         while let Some(msg) = reply_rx.recv().await {
             if msg.contains("\"__init\"") {
                 continue;
             }
+            let msg = match reply_page_target.as_deref() {
+                Some(target) => strip_implicit_session_for_page(msg, target),
+                None => msg,
+            };
             if ws_sender.send(Message::Text(msg.into())).await.is_err() {
                 break;
             }

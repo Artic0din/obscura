@@ -50,6 +50,8 @@ async fn page_level_websocket_commands_work_without_a_session_id() {
             let reply = next_reply_for_id(&mut ws, 1).await;
             assert_eq!(reply["result"]["result"]["value"], json!(2.0),
                 "sessionless evaluate must reach the default page: {reply}");
+            assert!(reply.get("sessionId").is_none(),
+                "page-level replies must not expose an internal session: {reply}");
 
             // Page domain — used to fail with "No page for session".
             ws.send(Message::Text(
@@ -83,9 +85,14 @@ async fn page_level_websocket_commands_work_without_a_session_id() {
             .unwrap();
             let reply = next_reply_for_id(&mut ws, 4).await;
             assert!(reply.get("error").is_none(), "navigate: {reply}");
+            assert!(reply.get("sessionId").is_none(),
+                "page-level replies must not expose an internal session: {reply}");
 
-            let saw_load = wait_for_event(&mut ws, "Page.loadEventFired", 5_000.0).await;
-            assert!(saw_load, "sessionless connection must receive Page.loadEventFired");
+            let load = wait_for_event(&mut ws, "Page.loadEventFired", 5_000.0)
+                .await
+                .expect("sessionless connection must receive Page.loadEventFired");
+            assert!(load.get("sessionId").is_none(),
+                "page-level events must not expose an internal session: {load}");
         })
         .await;
 }
@@ -119,18 +126,18 @@ async fn wait_for_event(
     >,
     method: &str,
     _budget_ms: f64,
-) -> bool {
+) -> Option<Value> {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     while tokio::time::Instant::now() < deadline {
         match tokio::time::timeout(Duration::from_secs(5), ws.next()).await {
             Ok(Some(Ok(Message::Text(t)))) => {
                 let v: Value = serde_json::from_str(&t).unwrap_or(Value::Null);
                 if v["method"] == method {
-                    return true;
+                    return Some(v);
                 }
             }
             _ => break,
         }
     }
-    false
+    None
 }
