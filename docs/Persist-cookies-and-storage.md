@@ -20,8 +20,11 @@ started, with its own copy of `localStorage` and a fresh IndexedDB store. A
 connection does not see values that other live connections set. When a
 connection closes, only the cookies and `localStorage` keys it changed are merged
 back into the profile and written to the directory, so concurrent connections
-do not overwrite each other's changes. Run separate `obscura serve` processes
-with different `--storage-dir` paths for fully isolated profiles.
+that change different keys do not overwrite each other. When two connections
+change the same cookie or key, the one that closes last wins. A merged change
+that would push the profile past its storage budget is dropped and logged. Run
+separate `obscura serve` processes with different `--storage-dir` paths for
+fully isolated profiles.
 
 For MCP, put the profile flag before the subcommand:
 
@@ -71,11 +74,13 @@ off, so check that `cookies.json` appears when persistence matters.
 
 ## When state is written
 
-- `fetch` and MCP: after a navigation's scripts have run (MCP `browser_navigate`),
-  and only when something actually changed.
-- `serve`: when each CDP client connection closes. Cookie changes made through
-  `Network.setCookie` and `Network.deleteCookies` are saved with the rest of
-  that connection's changes.
+- `localStorage`: after each navigation's scripts have run in `fetch` and MCP
+  (`browser_navigate`), and only for origins that changed.
+- `cookies.json`: at the end of a `fetch` run, and in MCP when the client closes
+  stdin or a saved storage state is restored. MCP cookie changes made by
+  navigation reach disk only then.
+- `serve`: when each CDP client connection closes, for both cookies (including
+  `Network.setCookie` and `Network.deleteCookies` changes) and `localStorage`.
 - On clean process exit (Ctrl-C, SIGTERM).
 
 `sessionStorage` is deliberately not written to disk. It belongs to one tab and
