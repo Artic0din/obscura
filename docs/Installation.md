@@ -34,7 +34,7 @@ tar xzf obscura-x86_64-macos.tar.gz
 
 ## Windows
 
-Download the `.zip` from [Releases](https://github.com/h4ckf0r0day/obscura/releases), extract, run `obscura.exe --version`.
+Download the `.zip` from [Releases](https://github.com/h4ckf0r0day/obscura/releases), extract, run `obscura.exe --version`. Keep `obscura.exe`, `obscura-worker.exe`, and the bundled runtime DLLs together in the extracted folder.
 
 ## Arch Linux (AUR)
 

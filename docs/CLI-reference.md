@@ -171,9 +171,12 @@ existing title and URL:
 ```
 
 `status` is the main document's final HTTP response code after redirects, not a
-script, image, or child frame's response. HTTP errors such as 404 and 503 still
-return `ok: true`: the server responded and the error document can be inspected
-with `dump_html`, `dump_text`, or `evaluate`. Navigation without an HTTP response,
+script, image, or child frame's response. HTTP errors such as 404 and 503 that
+carry a body still return `ok: true`: the server responded and the error
+document can be inspected with `dump_html`, `dump_text`, or `evaluate`. An HTTP
+error with an empty body (for example a bare 429 or 403 from a rate limiter)
+fails the navigation like Chrome, returning `ok: false` with
+`net::ERR_HTTP_RESPONSE_CODE_FAILURE` in the error. Navigation without an HTTP response,
 such as `about:blank`, a `data:` URL, or a tracker blocked before the request,
 returns `status: null`. A transport or
 navigation failure retains the existing `{"ok":false,"error":"..."}` envelope

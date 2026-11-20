@@ -15,7 +15,13 @@ The second invocation starts with the cookies and `localStorage` left by the fir
 obscura serve --storage-dir ./obscura-data
 ```
 
-All CDP sessions read and write to the same directory. Run separate `obscura serve` processes with different `--storage-dir` paths for isolated profiles.
+Each CDP client connection starts from the profile as it was when the server
+started, with its own copy of `localStorage` and a fresh IndexedDB store. A
+connection does not see values that other live connections set. When a
+connection closes, only the cookies and `localStorage` keys it changed are merged
+back into the profile and written to the directory, so concurrent connections
+do not overwrite each other's changes. Run separate `obscura serve` processes
+with different `--storage-dir` paths for fully isolated profiles.
 
 For MCP, put the profile flag before the subcommand:
 
@@ -65,10 +71,12 @@ off, so check that `cookies.json` appears when persistence matters.
 
 ## When state is written
 
-- After every navigation completes (CDP `Page.navigate`, MCP `browser_navigate`),
+- `fetch` and MCP: after a navigation's scripts have run (MCP `browser_navigate`),
   and only when something actually changed.
+- `serve`: when each CDP client connection closes. Cookie changes made through
+  `Network.setCookie` and `Network.deleteCookies` are saved with the rest of
+  that connection's changes.
 - On clean process exit (Ctrl-C, SIGTERM).
-- Manually via CDP `Network.setCookie` and `Network.deleteCookies`.
 
 `sessionStorage` is deliberately not written to disk. It belongs to one tab and
 is dropped when the tab goes away, the same as a real browser, but it does
@@ -92,7 +100,7 @@ Automatic cross-document `storage` events are not implemented by this change.
 
 IndexedDB data lives in memory, shared by pages in the same browser context and
 origin. It survives navigation, but not process restart. Incognito contexts do
-not share it. `--storage-dir` does not persist IndexedDB.
+not share it, and each `serve` client connection starts with an empty store. `--storage-dir` does not persist IndexedDB.
 
 Transactions stage record changes and publish them atomically on completion;
 aborting also rolls back schema changes and generated keys. Values use structured
