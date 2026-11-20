@@ -28,9 +28,10 @@ those to be root's.
 Storage and privileges:
 
 - **A mounted `--storage-dir` must be writable by uid 65532**, as above. This is
-  the one thing that breaks quietly rather than loudly. Verified: with an
-  unwritable storage dir Obscura completes the run, exits `0`, and prints no
-  warning — the cookie jar simply never persists. Check that
+  the one thing that breaks quietly rather than loudly. With an unwritable
+  storage dir Obscura completes the run and exits `0`; it logs an error saying
+  the cookies will not be persisted (silenced by `--quiet`), and the cookie jar
+  never persists. Check that
   `{storage-dir}/cookies.json` exists after your first run rather than assuming
   it does.
 - **Nothing in the image needs a privileged operation.** It binds an

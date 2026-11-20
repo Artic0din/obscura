@@ -323,7 +323,7 @@ init → commit → domcontentloaded → load → networkidle2 → networkidle0
 
 ## Storage
 
-`--storage-dir` persists cookies to `cookies.json` and `localStorage` to `localStorage/<origin>-<digest>.json`: read on process start, written after each navigation that changed something and on graceful shutdown. `sessionStorage` is origin-keyed in memory only, per tab.
+`--storage-dir` persists cookies to `cookies.json` and `localStorage` to `localStorage/<origin>-<digest>.json`: read on process start and written on graceful shutdown. `fetch` and MCP flush changed `localStorage` origins after each navigation; `serve` writes a connection's changes when it closes. `sessionStorage` is origin-keyed in memory only, per tab.
 
 Storage objects use their original prototype to distinguish platform members from
 stored names. Replacing or deleting `window.Storage` does not break either store;

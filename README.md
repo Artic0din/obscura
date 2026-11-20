@@ -146,7 +146,7 @@ both executables. No C++ build tools are required.
 Alternatively, with [Scoop](https://scoop.sh/) installed:
 
 ```powershell
-# Direct manifest install (available once this change merges to main):
+# Direct manifest install:
 scoop install https://raw.githubusercontent.com/h4ckf0r0day/obscura/main/scoop/obscura.json
 ```
 
